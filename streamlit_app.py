@@ -1,151 +1,335 @@
 import streamlit as st
 import pandas as pd
-import math
-from pathlib import Path
+import plotly.express as px
 
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
+st.set_page_config(page_title="UK Data Compliance Training", layout="wide")
+
+st.title("UK Data Legislation & ICO Compliance Training")
+
+st.sidebar.title("Navigation")
+page = st.sidebar.radio(
+    "Go to",
+    [
+        "Home",
+        "Computer Misuse Act",
+        "Data Protection Act",
+        "Freedom of Information Act",
+        "UK GDPR",
+        "PECR",
+        "ICO Oversight",
+        "Case Study",
+        "Assessment",
+        "Analytics Dashboard",
+    ],
 )
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
+if "results" not in st.session_state:
+    st.session_state.results = []
 
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+# -------------------------
+# HOME
+# -------------------------
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+if page == "Home":
+    st.header("Welcome to Compliance Training")
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+    st.write(
+        """
+This interactive system helps staff understand UK data legislation and the role of the ICO.
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+Modules include:
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
+• Computer Misuse Act 1990  
+• Data Protection Act 2018  
+• Freedom of Information Act 2000  
+• UK GDPR  
+• Privacy and Electronic Communications Regulations (PECR)
+
+The system records quiz results and generates analytics to identify compliance risk areas.
+"""
     )
 
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
+# -------------------------
+# LAW MODULES
+# -------------------------
 
-    return gdp_df
+if page == "Computer Misuse Act":
+    st.header("Computer Misuse Act 1990")
 
-gdp_df = get_gdp_data()
+    st.write(
+        """
+This law makes it illegal to:
 
-# -----------------------------------------------------------------------------
-# Draw the actual page
+• Access computer systems without permission  
+• Hack into accounts or databases  
+• Spread malware  
+"""
+    )
 
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
+    q = st.radio(
+        "Which activity breaks the Computer Misuse Act?",
+        [
+            "Accessing a file with permission",
+            "Guessing a password to access a colleague's account",
+            "Logging out of a shared computer",
+        ],
+    )
 
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
+    if st.button("Submit Answer - CMA"):
+        score = 1 if q == "Guessing a password to access a colleague's account" else 0
+        st.session_state.results.append({"law": "CMA", "score": score})
+        st.success("Answer recorded")
 
 
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
+if page == "Data Protection Act":
+    st.header("Data Protection Act 2018")
 
-st.header(f'GDP in {to_year}', divider='gray')
+    st.write(
+        """
+The Data Protection Act controls how personal data is used.
 
-''
+Key principles include:
 
-cols = st.columns(4)
+• Lawful processing  
+• Data minimisation  
+• Accuracy  
+• Security of personal data
+"""
+    )
 
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
+    q = st.radio(
+        "Which is a principle of the Data Protection Act?",
+        [
+            "Collect unlimited personal data",
+            "Store data securely",
+            "Sell personal data without permission",
+        ],
+    )
 
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
+    if st.button("Submit Answer - DPA"):
+        score = 1 if q == "Store data securely" else 0
+        st.session_state.results.append({"law": "DPA", "score": score})
+        st.success("Answer recorded")
 
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
 
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
+if page == "Freedom of Information Act":
+    st.header("Freedom of Information Act 2000")
+
+    st.write(
+        """
+FOIA allows the public to request information from public authorities.
+
+It promotes:
+
+• Transparency
+• Accountability
+"""
+    )
+
+    q = st.radio(
+        "Who can request information under FOIA?",
+        [
+            "Only journalists",
+            "Any member of the public",
+            "Only government officials",
+        ],
+    )
+
+    if st.button("Submit Answer - FOIA"):
+        score = 1 if q == "Any member of the public" else 0
+        st.session_state.results.append({"law": "FOIA", "score": score})
+        st.success("Answer recorded")
+
+
+if page == "UK GDPR":
+    st.header("UK GDPR")
+
+    st.write(
+        """
+UK GDPR regulates how organisations process personal data.
+
+It gives individuals rights including:
+
+• Right to access data  
+• Right to erasure  
+• Right to correct inaccurate data
+"""
+    )
+
+    q = st.radio(
+        "Which right exists under UK GDPR?",
+        [
+            "Right to be forgotten",
+            "Right to unlimited data storage",
+            "Right to bypass security",
+        ],
+    )
+
+    if st.button("Submit Answer - GDPR"):
+        score = 1 if q == "Right to be forgotten" else 0
+        st.session_state.results.append({"law": "GDPR", "score": score})
+        st.success("Answer recorded")
+
+
+if page == "PECR":
+    st.header("Privacy and Electronic Communications Regulations (PECR)")
+
+    st.write(
+        """
+PECR controls electronic marketing communications such as:
+
+• Email marketing  
+• Cookies  
+• SMS advertising
+"""
+    )
+
+    q = st.radio(
+        "Which action breaks PECR?",
+        [
+            "Sending marketing emails without consent",
+            "Asking for permission before emails",
+            "Allowing users to unsubscribe",
+        ],
+    )
+
+    if st.button("Submit Answer - PECR"):
+        score = 1 if q == "Sending marketing emails without consent" else 0
+        st.session_state.results.append({"law": "PECR", "score": score})
+        st.success("Answer recorded")
+
+
+# -------------------------
+# ICO SECTION
+# -------------------------
+
+if page == "ICO Oversight":
+    st.header("Information Commissioner's Office")
+
+    st.write(
+        """
+The ICO is the UK's independent authority for data protection.
+
+Responsibilities include:
+
+• Enforcing UK GDPR and DPA 2018  
+• Investigating data breaches  
+• Issuing fines and enforcement notices  
+• Providing guidance to organisations  
+• Promoting transparency
+"""
+    )
+
+    q = st.radio(
+        "What can the ICO do?",
+        [
+            "Issue fines for data breaches",
+            "Arrest employees",
+            "Control internet access",
+        ],
+    )
+
+    if st.button("Submit Answer - ICO"):
+        score = 1 if q == "Issue fines for data breaches" else 0
+        st.session_state.results.append({"law": "ICO", "score": score})
+        st.success("Answer recorded")
+
+# -------------------------
+# CASE STUDY
+# -------------------------
+
+if page == "Case Study":
+    st.header("Real ICO Enforcement Case")
+
+    st.write(
+        """
+Case: British Airways Data Breach
+
+Hackers accessed customer data including payment details.
+
+ICO investigation found poor security controls.
+"""
+    )
+
+    q = st.radio(
+        "Which law was breached?",
+        [
+            "UK GDPR",
+            "Freedom of Information Act",
+            "Computer Misuse Act only",
+        ],
+    )
+
+    if st.button("Submit Answer - Case"):
+        score = 1 if q == "UK GDPR" else 0
+        st.session_state.results.append({"law": "Case Study", "score": score})
+        st.success("Answer recorded")
+
+    st.write(
+        """
+Outcome:
+
+• ICO fined British Airways £20 million  
+• Required security improvements  
+• Highlighted importance of protecting personal data
+"""
+    )
+
+# -------------------------
+# ASSESSMENT
+# -------------------------
+
+if page == "Assessment":
+    st.header("Final Compliance Assessment")
+
+    q1 = st.radio(
+        "Which law protects personal data?",
+        ["Data Protection Act", "Freedom of Information Act", "Computer Misuse Act"],
+    )
+
+    q2 = st.radio(
+        "Who enforces data protection laws?",
+        ["ICO", "Police", "HMRC"],
+    )
+
+    if st.button("Submit Assessment"):
+        score = 0
+        if q1 == "Data Protection Act":
+            score += 1
+        if q2 == "ICO":
+            score += 1
+
+        st.session_state.results.append({"law": "Assessment", "score": score})
+
+        st.success(f"Assessment Score: {score}/2")
+
+# -------------------------
+# ANALYTICS DASHBOARD
+# -------------------------
+
+if page == "Analytics Dashboard":
+    st.header("Learning Analytics Dashboard")
+
+    if len(st.session_state.results) == 0:
+        st.warning("No data yet. Complete modules first.")
+    else:
+        df = pd.DataFrame(st.session_state.results)
+
+        law_scores = df.groupby("law").mean().reset_index()
+
+        fig = px.bar(
+            law_scores,
+            x="law",
+            y="score",
+            title="Average Understanding by Law",
         )
+
+        st.plotly_chart(fig)
+
+        avg_score = df["score"].mean()
+
+        st.metric("Overall Compliance Readiness", f"{round(avg_score*100)}%")
+
+        weak = law_scores.sort_values("score").iloc[0]["law"]
+
+        st.write(f"⚠ Weakest knowledge area: **{weak}**")
